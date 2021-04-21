@@ -1,39 +1,32 @@
 #!/usr/bin/env python
 
 import rclpy
-from std_srvs.srv import Empty
 from gazebo_msgs.msg import ODEPhysics
-from gazebo_msgs.srv import SetPhysicsProperties, SetPhysicsPropertiesRequest
-from std_msgs.msg import Float64
+from gazebo_msgs.srv import SetPhysicsProperties
 from geometry_msgs.msg import Vector3
+from std_msgs.msg import Float64
+from std_srvs.srv import Empty
 
-from . import exceptions
+from . import exceptions, service_utils
+
 
 class GazeboConnection():
 
-    def _create_service_client(self, srv_type, srv_name:str):
-        client = self.node.create_client(srv_type, srv_name)
-        while not client.wait_for_service(timeout_sec=1.0):
-            self.node.get_logger().info(srv_name + ' service not available, waiting to try again...')
-        self.node.get_logger().info(srv_name + ' service found.')
-        return client
-
     def __init__(self, start_init_physics_parameters, reset_world_or_sim, max_retry = 20):
-
-        self._max_retry = max_retry
-
         rclpy.init()
         self.node = rclpy.create_node(self.__class__.__name__)
+
+        self._max_retry = max_retry
 
         # self.unpause = rospy.ServiceProxy('/gazebo/unpause_physics', Empty)
         # self.pause = rospy.ServiceProxy('/gazebo/pause_physics', Empty)
         # self.reset_simulation_proxy = rospy.ServiceProxy('/gazebo/reset_simulation', Empty)
         # self.reset_world_proxy = rospy.ServiceProxy('/gazebo/reset_world', Empty)
 
-        self.unpause_client = self._create_service_client(Empty, '/gazebo/unpause_physics')
-        self.pause_client = self._create_service_client(Empty, '/gazebo/pause_physics')
-        self.reset_simulation_client = self._create_service_client(Empty, '/gazebo/reset_simulation')
-        self.reset_world_client = self._create_service_client(Empty, '/gazebo/reset_world')
+        self.unpause_client = service_utils.create_service_client(self.node, Empty, '/gazebo/unpause_physics')
+        self.pause_client = service_utils.create_service_client(self.node, Empty, '/gazebo/pause_physics')
+        self.reset_simulation_client = service_utils.create_service_client(self.node, Empty, '/gazebo/reset_simulation')
+        self.reset_world_client = service_utils.create_service_client(self.node, Empty, '/gazebo/reset_world')
 
         # # Setup the Gravity Controle system
         # service_name = '/gazebo/set_physics_properties'
@@ -42,19 +35,13 @@ class GazeboConnection():
         # rospy.logdebug("Service Found " + str(service_name))
         # self.set_physics = rospy.ServiceProxy(service_name, SetPhysicsProperties)
 
-        self.set_physics_client = self._create_service_client(SetPhysicsProperties, '/gazebo/set_physics_properties')
+        self.set_physics_client = service_utils.create_service_client(self.node, SetPhysicsProperties, '/gazebo/set_physics_properties')
 
         self.start_init_physics_parameters = start_init_physics_parameters
         self.reset_world_or_sim = reset_world_or_sim
         self.init_values()
         # We always pause the simulation, important for legged robots learning
         self.pauseSim()
-
-    def _call_and_wait_for_service(self, client, data, timeout_sec=1.0, timeout_exception=exceptions.SpinFutureTimeoutException):
-        future = client.call_async(data)
-        future.set_exception(timeout_exception)
-        rclpy.spin_until_future_complete(self.node, future, timeout_sec=timeout_sec)
-        return future.result()
 
     def pauseSim(self):
         # rospy.logdebug("PAUSING service found...")
@@ -84,7 +71,7 @@ class GazeboConnection():
                     # future = self.pause_client.call_async(Empty())
                     # future.set_exception(exceptions.SpinFutureTimeoutException)
                     # rclpy.spin_until_future_complete(self.node, future, timeout_sec=1.0)
-                    self._call_and_wait_for_service(self.pause_client, Empty())
+                    service_utils.call_and_wait_for_service_response(self.node, self.pause_client, Empty())
                     paused_done = True
                     self.node.get_logger().debug("PAUSING service calling...DONE")
                 except exceptions.SpinFutureTimeoutException as e:
@@ -125,7 +112,7 @@ class GazeboConnection():
             if counter < self._max_retry:
                 try:
                     self.node.get_logger().debug("UNPAUSING service calling...")
-                    self._call_and_wait_for_service(self.unpause_client, Empty())
+                    service_utils.call_and_wait_for_service_response(self.node, self.unpause_client, Empty())
                     unpaused_done = True
                     self.node.get_logger().debug("UNPAUSING service calling...DONE")
                 except exceptions.SpinFutureTimeoutException as e:
@@ -161,7 +148,7 @@ class GazeboConnection():
         # rospy.wait_for_service('/gazebo/reset_simulation') # This is waited for in the constructor
         try:
             # self.reset_simulation_proxy()
-            self._call_and_wait_for_service(self.reset_simulation_client, Empty())
+            service_utils.call_and_wait_for_service_response(self.node, self.reset_simulation_client, Empty())
         except exceptions.SpinFutureTimeoutException as e:
             self.node.get_logger().error("/gazebo/reset_simulation service call failed")
 
@@ -169,7 +156,7 @@ class GazeboConnection():
         # rospy.wait_for_service('/gazebo/reset_world') # This is waited for in the constructor
         try:
             # self.reset_world_proxy()
-            self._call_and_wait_for_service(self.reset_world_client, Empty())
+            service_utils.call_and_wait_for_service_response(self.node, self.reset_world_client, Empty())
         except exceptions.SpinFutureTimeoutException as e:
             self.node.get_logger().error("/gazebo/reset_world service call failed")
 
@@ -217,7 +204,7 @@ class GazeboConnection():
 
         self.pauseSim()
 
-        set_physics_request = SetPhysicsPropertiesRequest()
+        set_physics_request = SetPhysicsProperties.Request()
         set_physics_request.time_step = self._time_step.data
         set_physics_request.max_update_rate = self._max_update_rate.data
         set_physics_request.gravity = self._gravity
@@ -226,7 +213,9 @@ class GazeboConnection():
         # rospy.logdebug(str(set_physics_request.gravity))
         self.node.get_logger().debug(str(set_physics_request.gravity))
 
-        result = self.set_physics(set_physics_request)
+        # result = self.set_physics(set_physics_request)
+        result = service_utils.call_and_wait_for_service_response(self.node, self.set_physics_client, set_physics_request)
+
         # rospy.logdebug("Gravity Update Result==" + str(result.success) + ",message==" + str(result.status_message))
         self.node.get_logger().debug("Gravity Update Result==" + str(result.success) + ",message==" + str(result.status_message))
 
