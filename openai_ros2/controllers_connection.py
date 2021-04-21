@@ -17,7 +17,7 @@ class ControllersConnection():
   
         self.switch_service_name = '/'+namespace+'/controller_manager/switch_controller'
         # self.switch_service = rospy.ServiceProxy(self.switch_service_name, SwitchController)
-        self.switch_service_client = service_utils.create_service_client(self.node, SwitchController, switch_service_name)
+        self.switch_service_client = service_utils.create_service_client(self.node, SwitchController, self.switch_service_name)
 
         self.node.get_logger().warning("END Init ControllersConnection")
 

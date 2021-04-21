@@ -17,7 +17,6 @@
   <depend>turtlebot3_msgs</depend>
   <depend>gazebo_msgs</depend>
   <depend>controller_manager_msgs</depend>
-  <depend>openai_ros2_msgs</depend>
 
   <test_depend>ament_copyright</test_depend>
   <test_depend>ament_flake8</test_depend>
@@ -25,6 +24,7 @@
   <test_depend>python3-pytest</test_depend>
 
   <exec_depend>gazebo</exec_depend>
+  <exec_depend>openai_ros2_msgs</exec_depend>
 
   <export>
     <build_type>ament_python</build_type>
