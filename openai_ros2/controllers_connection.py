@@ -8,9 +8,8 @@ from . import exceptions, service_utils
 
 class ControllersConnection():
     
-    def __init__(self, namespace, controllers_list):
-        rclpy.init()
-        self.node = rclpy.create_node(self.__class__.__name__)
+    def __init__(self, node, namespace, controllers_list):
+        self.node = node
 
         self.node.get_logger().warning("Start Init ControllersConnection")
         self.controllers_list = controllers_list

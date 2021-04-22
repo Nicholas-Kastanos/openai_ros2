@@ -12,9 +12,8 @@ from . import exceptions, service_utils
 
 class GazeboConnection():
 
-    def __init__(self, start_init_physics_parameters, reset_world_or_sim, max_retry = 20):
-        rclpy.init()
-        self.node = rclpy.create_node(self.__class__.__name__)
+    def __init__(self, node, start_init_physics_parameters, reset_world_or_sim, max_retry = 20):
+        self.node = node
 
         self._max_retry = max_retry
 
