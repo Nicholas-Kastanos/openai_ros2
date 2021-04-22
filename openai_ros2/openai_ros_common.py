@@ -3,7 +3,7 @@ import gym # pylint: disable=import-error
 from .task_envs.task_envs_list import RegisterOpenAI_Ros_Env
 import roslaunch # pylint: disable=import-error
 import rclpy
-from rclpy import Node
+from rclpy.node import Node
 import rospkg
 import os
 import git # pylint: disable=import-error

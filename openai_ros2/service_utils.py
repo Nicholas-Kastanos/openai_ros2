@@ -1,6 +1,7 @@
 import rclpy
-from rclpy import Node
+from rclpy.node import Node
 from rclpy.client import Client
+from . import exceptions
 
 
 def create_service_client(node: Node, srv_type, srv_name:str):
