@@ -6,10 +6,12 @@ from .controllers_connection import ControllersConnection
 #https://bitbucket.org/theconstructcore/theconstruct_msgs/src/master/msg/RLExperimentInfo.msg
 from openai_ros2_msgs.msg import RLExperimentInfo # pylint: disable=import-error
 
+from rclpy.node import Node
+
 # https://github.com/openai/gym/blob/master/gym/core.py
 class RobotGazeboEnv(gym.Env):
 
-    def __init__(self, node, robot_name_space, controllers_list, reset_controls, start_init_physics_parameters=True, reset_world_or_sim="SIMULATION"):
+    def __init__(self, node: Node, robot_name_space, controllers_list, reset_controls, start_init_physics_parameters=True, reset_world_or_sim="SIMULATION"):
         self.node = node
         self._logger = self.node.get_logger()
 
@@ -22,7 +24,7 @@ class RobotGazeboEnv(gym.Env):
 
         # Set up ROS related variables
         self.episode_num = 0
-        self.cumulated_episode_reward = 0
+        self.cumulated_episode_reward = 0.0
         self.reward_pub = self.node.create_publisher(RLExperimentInfo, '/openai/reward', 1) # If QoS Profile is int, it is queue size ie. 1
 
         # We Unpause the simulation and reset the controllers if needed
@@ -90,7 +92,6 @@ class RobotGazeboEnv(gym.Env):
         """
         self._logger.debug("Closing RobotGazeboEnvironment")
         self.node.destroy_node()
-        # rospy.signal_shutdown("Closing RobotGazeboEnvironment")
         rclpy.shutdown()
 
     def _update_episode(self):
@@ -107,7 +108,7 @@ class RobotGazeboEnv(gym.Env):
         self._logger.warning("PUBLISHING REWARD...DONE="+str(self.cumulated_episode_reward)+",EP="+str(self.episode_num))
 
         self.episode_num += 1
-        self.cumulated_episode_reward = 0
+        self.cumulated_episode_reward = 0.0
 
 
     def _publish_reward_topic(self, reward, episode_number=1):

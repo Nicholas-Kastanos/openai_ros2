@@ -13,10 +13,12 @@ class ControllersConnection():
 
         self.node.get_logger().warning("Start Init ControllersConnection")
         self.controllers_list = controllers_list
-  
-        self.switch_service_name = '/'+namespace+'/controller_manager/switch_controller'
-        # self.switch_service = rospy.ServiceProxy(self.switch_service_name, SwitchController)
-        self.switch_service_client = service_utils.create_service_client(self.node, SwitchController, self.switch_service_name)
+        self.switch_service_name = None
+        self.switch_service_client = None
+        if namespace:
+            namespace = '/'+namespace
+            self.switch_service_name = namespace+'/controller_manager/switch_controller'
+            self.switch_service_client = service_utils.create_service_client(self.node, SwitchController, self.switch_service_name)
 
         self.node.get_logger().warning("END Init ControllersConnection")
 
@@ -27,8 +29,8 @@ class ControllersConnection():
         :param controllers_off: ["name_controler_1", "name_controller2",...,"name_controller_n"]
         :return:
         """
-        # rospy.wait_for_service(self.switch_service_name) # Already waited for service in constructor
-
+        if not self.switch_service_name:
+            raise exceptions.NamespaceNotSetException
         try:
             switch_request_object = SwitchController.Request()
             switch_request_object.start_controllers = controllers_on
@@ -62,6 +64,8 @@ class ControllersConnection():
         :param controllers_reset: ["name_controler_1", "name_controller2",...,"name_controller_n"]
         :return:
         """
+        if not self.switch_service_name:
+            raise exceptions.NamespaceNotSetException
         reset_result = False
 
         result_off_ok = self.switch_controllers(controllers_on = [],
@@ -84,4 +88,6 @@ class ControllersConnection():
         return reset_result
 
     def update_controllers_list(self, new_controllers_list):
+        if not self.switch_service_name:
+            raise exceptions.NamespaceNotSetException
         self.controllers_list = new_controllers_list
